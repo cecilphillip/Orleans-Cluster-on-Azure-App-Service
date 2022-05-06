@@ -5,6 +5,13 @@ namespace Orleans.ShoppingCart.Silo;
 
 public sealed class Startup
 {
+    public IConfiguration Configuration { get; }
+
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddMudServices();
@@ -18,6 +25,7 @@ public sealed class Startup
         services.AddSingleton<ToastService>();
         services.AddLocalStorageServices();
         services.AddApplicationInsights("Silo");
+        services.AddStripe(Configuration.GetSection("Stripe"));
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -42,4 +50,4 @@ public sealed class Startup
             endpoints.MapFallbackToPage("/_Host");
         });
     }
-}   
+}
