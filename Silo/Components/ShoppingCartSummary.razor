@@ -32,7 +32,7 @@
         </MudStack>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" 
             Disabled="@(Items?.Count() == 0 ? true : false)" DisableElevation
-            Size=@Size.Large>
+            Size=@Size.Large OnClick=@OnCheckout>
             Checkout
         </MudButton>
     </MudStack>
@@ -43,4 +43,7 @@
 
     [Parameter, EditorRequired]
     public HashSet<CartItem>? Items { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnCheckout { get; set; }
 }

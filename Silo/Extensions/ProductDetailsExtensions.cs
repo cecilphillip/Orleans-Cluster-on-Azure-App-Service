@@ -15,7 +15,8 @@ internal static class ProductDetailsExtensions
             .RuleFor(p => p.Quantity, (f, p) => f.Random.Number(0, 1_200))
             .RuleFor(p => p.ImageUrl, (f, p) => f.Image.PicsumUrl())
             .RuleFor(p => p.Category, (f, p) => f.PickRandom<ProductCategory>())
-            .RuleFor(p => p.DetailsUrl, (f, p) => f.Internet.Url());
+            .RuleFor(p => p.DetailsUrl, (f, p) => f.Internet.Url())
+            .RuleFor(p => p.StripePriceId, (f, p) => string.Empty);
 
     internal static bool MatchesFilter(this ProductDetails product, string? filter)
     {

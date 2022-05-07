@@ -14,6 +14,7 @@ public sealed record class ProductDetails
     public decimal UnitPrice { get; set; }
     public string DetailsUrl { get; set; } = null!;
     public string ImageUrl { get; set; } = null!;
+    public string StripePriceId { get; set; } = null!;
 
     [JsonIgnore]
     public decimal TotalPrice =>
