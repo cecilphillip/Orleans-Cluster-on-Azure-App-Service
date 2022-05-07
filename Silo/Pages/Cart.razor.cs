@@ -65,7 +65,7 @@ public sealed partial class Cart
             {
                 AllowedCountries = new List<string> { "US" }
             },
-            SuccessUrl = baseUrl + "/success?session_id={CHECKOUT_SESSION_ID}",
+            SuccessUrl = baseUrl + "success?session_id={CHECKOUT_SESSION_ID}",
             CancelUrl = baseUrl
         };
 

@@ -20,7 +20,7 @@ public sealed class Startup
         services.AddHttpContextAccessor();
         services.AddSingleton<ShoppingCartService>();
         services.AddSingleton<InventoryService>();
-        services.AddSingleton<ProductService>();
+        services.AddSingleton<Services.ProductService>();
         services.AddScoped<ComponentStateChangedObserver>();
         services.AddSingleton<ToastService>();
         services.AddLocalStorageServices();
@@ -46,8 +46,40 @@ public sealed class Startup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapPost("/webhook", HandleWebhook);
             endpoints.MapBlazorHub();
             endpoints.MapFallbackToPage("/_Host");
         });
+
+        async Task HandleWebhook(HttpContext context)
+        {
+            var payload = await new StreamReader(context.Request.Body).ReadToEndAsync();
+            Stripe.Event stripeEvent;
+
+            try
+            {
+                // Validate webhook source
+                var webookSecret = Configuration.GetSection("Stripe")["WEBHOOK_SECRET"];
+                stripeEvent = Stripe.EventUtility.ConstructEvent(
+                    payload, context.Request.Headers["Stripe-Signature"], webookSecret
+                );
+
+                // Handle checkout completed webhook event
+                if (stripeEvent.Type == Stripe.Events.CheckoutSessionCompleted)
+                {
+                    var checkoutSession = stripeEvent.Data.Object as Stripe.Checkout.Session;
+
+                    // Check session status and handle fullfilment workflow
+
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    await context.Response.WriteAsync($"Checkout status => {checkoutSession!.Status}");
+                }
+            }
+            catch (Stripe.StripeException)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Bad things happened");
+            }
+        }
     }
 }
