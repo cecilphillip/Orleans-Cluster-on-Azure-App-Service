@@ -2,42 +2,45 @@
 @implements IDisposable
 @inject IStripeClient CustomStripeClient
 @inject PersistentComponentState ComponentState
+@inject ShoppingCartService ShoppingCart
+@inject ComponentStateChangedObserver Observer
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-16">
-    <MudText Typo=Typo.h4 Class="pb-4" Align="Align.Center"
-             Style="@($"color:{Colors.DeepPurple.Darken2};")">
-        Checkout Completed
-    </MudText>
-    <MudText Typo=Typo.body1 Class="pb-4" Align="Align.Center"
-             Style="@($"color:{Colors.Shades.Black};")">
-        Your order has been received and is being processed
-    </MudText>
-
-    @if (persistedSession is not null)
-    {
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-16">
+        <MudText Typo=Typo.h4 Class="pb-4" Align="Align.Center"
+                 Style="@($"color:{Colors.DeepPurple.Darken2};")">
+            Checkout Completed
+        </MudText>
         <MudText Typo=Typo.body1 Class="pb-4" Align="Align.Center"
                  Style="@($"color:{Colors.Shades.Black};")">
-            <MudChip Icon="@Icons.Filled.AttachMoney" Color="Color.Info">Total Charged $@((persistedSession.Total / 100m))</MudChip>
-            <MudChip Icon="@Icons.Filled.Check" Color="Color.Success">Payment Status: @persistedSession.Status</MudChip>
+            Your order has been received and is being processed
         </MudText>
-    }
-</MudContainer>
 
-@code
-{
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "session_id")]
-    public string? SessionId { get; set; } = null;
-    protected PersistedSession? persistedSession { get; set; }
-    protected decimal? TotalCharged { get; set; }
-
-    protected PersistingComponentStateSubscription persistingSubscription;
-    private const string _statePersistKey = "checkoutSession";
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
+        @if (persistedSession is not null)
         {
+            <MudText Typo=Typo.body1 Class="pb-4" Align="Align.Center"
+                     Style="@($"color:{Colors.Shades.Black};")">
+                <MudChip Icon="@Icons.Filled.AttachMoney" Color="Color.Info">Total Charged $@((persistedSession.Total / 100m))</MudChip>
+                <MudChip Icon="@Icons.Filled.Check" Color="Color.Success">Payment Status: @persistedSession.Status</MudChip>
+            </MudText>
+        }
+    </MudContainer>
+
+    @code
+{
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "session_id")]
+        public string? SessionId { get; set; } = null;
+        protected PersistedSession? persistedSession { get; set; }
+        protected decimal? TotalCharged { get; set; }
+
+        protected PersistingComponentStateSubscription persistingSubscription;
+        private const string _statePersistKey = "checkoutSession";
+
+        protected override async Task OnInitializedAsync()
+        {
+            await ShoppingCart.EmptyCartAsync();
+            await Observer.NotifyStateChangedAsync();
+
             persistingSubscription = ComponentState.RegisterOnPersisting(PersistCheckoutSessions);
 
             if (ComponentState.TryTakeFromJson<PersistedSession>(_statePersistKey, out var restoredState))
@@ -51,23 +54,17 @@
                 persistedSession = new PersistedSession(session.Id, session.AmountTotal ?? 0, session.Status);
             }
         }
-        catch (Exception ex)
+
+        protected Task PersistCheckoutSessions()
         {
-            Console.WriteLine(ex.Message);
+            ComponentState.PersistAsJson(_statePersistKey, persistedSession);
+            return Task.CompletedTask;
         }
 
-    }
+        public void Dispose()
+        {
+            persistingSubscription.Dispose();
+        }
 
-    protected Task PersistCheckoutSessions()
-    {
-        ComponentState.PersistAsJson(_statePersistKey, persistedSession);
-        return Task.CompletedTask;
+        protected record PersistedSession(string Id, long Total, string Status);
     }
-
-    public void Dispose()
-    {
-        persistingSubscription.Dispose();
-    }
-
-    protected record PersistedSession(string Id, long Total, string Status);
-}
